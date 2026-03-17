@@ -1,9 +1,14 @@
-use axum::{Json, Router, extract::Path, routing::get};
+use axum::{Json, Router, extract::Path, http::StatusCode, routing::get};
 use serde::Serialize;
 #[derive(Serialize)]
 struct Token {
     name: String,
     supply: u64,
+}
+
+#[derive(Serialize)]
+struct  ErrorResponse {
+    error: String,
 }
 
 #[tokio::main]
@@ -26,15 +31,18 @@ async fn root() -> &'static str {
     "Hello from Rust server!!"
 }
 
-async fn get_token(Path(name): Path<String>) -> Json<Token> {
+async fn get_token(Path(name): Path<String>) -> Result<Json<Token>, (StatusCode, Json<ErrorResponse>)> {
     let supply = match name.as_str() {
         "MorphToken" => 1000000,
         "RustToken" => 500000,
-        _ => 0,
+        _ => {
+            let err_msg = ErrorResponse{error: String::from("Token Not Found")};
+            return Err((StatusCode::NOT_FOUND, Json(err_msg)));
+        }
     };
     let token = Token {
         name,
         supply
     };
-    Json(token)
+    Ok(Json(token))
 }
