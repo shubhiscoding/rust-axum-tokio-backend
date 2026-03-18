@@ -1,23 +1,23 @@
-use std::{collections::HashMap, sync::{Arc}};
+use std::{sync::{Arc}};
 use axum::{ Router, routing::{get, post}};
 
 mod models;
+use dashmap::DashMap;
 use models::AppState;
 mod routes;
 use routes::mint;
 use routes::get_token;
-use tokio::sync::RwLock;
 
 use crate::routes::burn;
 
 #[tokio::main]
 async fn main() {
 
-    let mut tokens = HashMap::new();
+    let mut tokens = DashMap::new();
     tokens.insert("MorphToken".to_string(), 1_000_000);
     tokens.insert("RustToken".to_string(), 500_000);
 
-    let state = Arc::new(RwLock::new(AppState {tokens}));
+    let state = Arc::new(AppState {tokens});
     
     let app = Router::new()
     .route("/", get(root))

@@ -1,19 +1,16 @@
 use std::sync::{Arc};
 
 use axum::{Json, extract::{Path, State}, http::StatusCode};
-use tokio::sync::RwLock;
 
 use crate::models::{AppState, ErrorResponse, MintRequest, Token, BurnRequest};
 
 pub async fn mint(
-    State(state): State<Arc<RwLock<AppState>>>, 
+    State(state): State<Arc<AppState>>, 
     Json(payload): Json<MintRequest>
 ) -> Result<Json<Token>, (StatusCode, Json<ErrorResponse>)> {    
     let token = {
-        let mut state = state.write().await;
-
         match state.tokens.get_mut(&payload.name) {
-            Some(supply) => {
+            Some(mut supply) => {
                 *supply += payload.amount;
 
                 Token {
@@ -33,10 +30,9 @@ pub async fn mint(
 }
 
 pub async fn get_token( 
-    State(state): State<Arc<RwLock<AppState>>>, 
+    State(state): State<Arc<AppState>>, 
     Path(name): Path<String>
 ) -> Result<Json<Token>, (StatusCode, Json<ErrorResponse>)> {
-    let state = state.read().await;
 
     match state.tokens.get(&name) {
         Some(supply) => {
@@ -54,13 +50,12 @@ pub async fn get_token(
 }
 
 pub async fn burn(
-    State(state): State<Arc<RwLock<AppState>>>, 
+    State(state): State<Arc<AppState>>, 
     Json(payload): Json<BurnRequest>
 ) -> Result<Json<Token>, (StatusCode, Json<ErrorResponse>)> {  
     let token = {
-        let mut state = state.write().await;
         match state.tokens.get_mut(&payload.name) {
-            Some(curr) => {
+            Some(mut curr) => {
                 if *curr < payload.amount {
                     let err_msg = ErrorResponse{error: String::from("Insufficient Supply")};
                     return Err((StatusCode::BAD_REQUEST, Json(err_msg)));

@@ -1,4 +1,4 @@
-use std::{collections::HashMap};
+use dashmap::DashMap;
 pub struct AppState {
-   pub tokens: HashMap<String, u64>,
+   pub tokens: DashMap<String, u64>,
 }
