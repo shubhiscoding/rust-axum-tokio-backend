@@ -60,6 +60,10 @@ pub async fn burn(
         let mut state = state.lock().unwrap();
         match state.tokens.get_mut(&payload.name) {
             Some(curr) => {
+                if *curr < payload.amount {
+                    let err_msg = ErrorResponse{error: String::from("Insufficient Supply")};
+                    return Err((StatusCode::BAD_REQUEST, Json(err_msg)));
+                }
                 *curr -= payload.amount;
                 Token {
                     name: payload.name,
