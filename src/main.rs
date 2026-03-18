@@ -77,19 +77,26 @@ async fn get_token(
 async fn mint(
     State(state): State<Arc<Mutex<AppState>>>, 
     Json(payload): Json<MintRequest>
-) -> Result<Json<Token>, (StatusCode, Json<ErrorResponse>)> {
-    let mut state = state.lock().unwrap();
-    let req = &payload;
-    
-    match state.tokens.get_mut(&req.name) {
-        Some(curr_token) => {
-            *curr_token += payload.amount;
-            let tk = Token { name: req.name.to_string(), supply: *curr_token };
-            Ok(Json(tk))
+) -> Result<Json<Token>, (StatusCode, Json<ErrorResponse>)> {    
+    let token = {
+        let mut state = state.lock().unwrap();
+
+        match state.tokens.get_mut(&payload.name) {
+            Some(supply) => {
+                *supply += payload.amount;
+
+                Token {
+                    name: payload.name,
+                    supply: *supply,
+                }
+            }
+            None => {
+                return Err((StatusCode::NOT_FOUND, Json(ErrorResponse {
+                    error: "Token Not Found".to_string(),
+                })));
+            }
         }
-        None => {
-            let err_msg = ErrorResponse{error: String::from("Token Not Found")};
-            return Err((StatusCode::NOT_FOUND, Json(err_msg)));
-        }
-    }
+    };
+
+    Ok(Json(token))
 }
