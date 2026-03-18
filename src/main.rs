@@ -1,11 +1,18 @@
-use std::{collections::HashMap, sync::Arc};
-
-use axum::{Json, Router, extract::{Path, State}, http::StatusCode, routing::get};
+use std::{collections::HashMap, sync::{Arc, Mutex}};
+use axum::{Json, Router, extract::{Path, State}, http::StatusCode, routing::{get, post}};
 use serde::Serialize;
+use serde::Deserialize;
+
 #[derive(Serialize)]
 struct Token {
     name: String,
     supply: u64,
+}
+
+#[derive(Deserialize)]
+struct MintRequest {
+    name: String,
+    amount: u64,
 }
 
 #[derive(Serialize)]
@@ -24,11 +31,12 @@ async fn main() {
     tokens.insert("MorphToken".to_string(), 1_000_000);
     tokens.insert("RustToken".to_string(), 500_000);
 
-    let state = Arc::new(AppState {tokens});
+    let state = Arc::new(Mutex::new(AppState {tokens}));
     
     let app = Router::new()
     .route("/", get(root))
     .route("/token/{name}", get(get_token))
+    .route("/mint", post(mint))
     .with_state(state);
 
     let listeners = tokio::net::TcpListener::bind("127.0.0.1:3000")
@@ -45,7 +53,12 @@ async fn root() -> &'static str {
     "Hello from Rust server!!"
 }
 
-async fn get_token( State(state): State<Arc<AppState>>, Path(name): Path<String>) -> Result<Json<Token>, (StatusCode, Json<ErrorResponse>)> {
+async fn get_token( 
+    State(state): State<Arc<Mutex<AppState>>>, 
+    Path(name): Path<String>
+) -> Result<Json<Token>, (StatusCode, Json<ErrorResponse>)> {
+    let state = state.lock().unwrap();
+
     match state.tokens.get(&name) {
         Some(supply) => {
             let token = Token {
@@ -53,6 +66,26 @@ async fn get_token( State(state): State<Arc<AppState>>, Path(name): Path<String>
                 supply: *supply,
             };
             Ok(Json(token))
+        }
+        None => {
+            let err_msg = ErrorResponse{error: String::from("Token Not Found")};
+            return Err((StatusCode::NOT_FOUND, Json(err_msg)));
+        }
+    }
+}
+
+async fn mint(
+    State(state): State<Arc<Mutex<AppState>>>, 
+    Json(payload): Json<MintRequest>
+) -> Result<Json<Token>, (StatusCode, Json<ErrorResponse>)> {
+    let mut state = state.lock().unwrap();
+    let req = &payload;
+    
+    match state.tokens.get_mut(&req.name) {
+        Some(curr_token) => {
+            *curr_token += payload.amount;
+            let tk = Token { name: req.name.to_string(), supply: *curr_token };
+            Ok(Json(tk))
         }
         None => {
             let err_msg = ErrorResponse{error: String::from("Token Not Found")};
