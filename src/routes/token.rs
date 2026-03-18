@@ -1,15 +1,15 @@
-use std::sync::{Arc, Mutex};
+use std::sync::{Arc, RwLock};
 
 use axum::{Json, extract::{Path, State}, http::StatusCode};
 
 use crate::models::{AppState, ErrorResponse, MintRequest, Token, BurnRequest};
 
 pub async fn mint(
-    State(state): State<Arc<Mutex<AppState>>>, 
+    State(state): State<Arc<RwLock<AppState>>>, 
     Json(payload): Json<MintRequest>
 ) -> Result<Json<Token>, (StatusCode, Json<ErrorResponse>)> {    
     let token = {
-        let mut state = state.lock().unwrap();
+        let mut state = state.write().unwrap();
 
         match state.tokens.get_mut(&payload.name) {
             Some(supply) => {
@@ -32,10 +32,10 @@ pub async fn mint(
 }
 
 pub async fn get_token( 
-    State(state): State<Arc<Mutex<AppState>>>, 
+    State(state): State<Arc<RwLock<AppState>>>, 
     Path(name): Path<String>
 ) -> Result<Json<Token>, (StatusCode, Json<ErrorResponse>)> {
-    let state = state.lock().unwrap();
+    let state = state.read().unwrap();
 
     match state.tokens.get(&name) {
         Some(supply) => {
@@ -53,11 +53,11 @@ pub async fn get_token(
 }
 
 pub async fn burn(
-    State(state): State<Arc<Mutex<AppState>>>, 
+    State(state): State<Arc<RwLock<AppState>>>, 
     Json(payload): Json<BurnRequest>
 ) -> Result<Json<Token>, (StatusCode, Json<ErrorResponse>)> {  
     let token = {
-        let mut state = state.lock().unwrap();
+        let mut state = state.write().unwrap();
         match state.tokens.get_mut(&payload.name) {
             Some(curr) => {
                 if *curr < payload.amount {

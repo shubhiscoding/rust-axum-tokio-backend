@@ -1,4 +1,4 @@
-use std::{collections::HashMap, sync::{Arc, Mutex}};
+use std::{collections::HashMap, sync::{Arc, RwLock}};
 use axum::{ Router, routing::{get, post}};
 
 mod models;
@@ -16,7 +16,7 @@ async fn main() {
     tokens.insert("MorphToken".to_string(), 1_000_000);
     tokens.insert("RustToken".to_string(), 500_000);
 
-    let state = Arc::new(Mutex::new(AppState {tokens}));
+    let state = Arc::new(RwLock::new(AppState {tokens}));
     
     let app = Router::new()
     .route("/", get(root))
