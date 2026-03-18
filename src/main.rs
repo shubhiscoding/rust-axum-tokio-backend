@@ -7,6 +7,8 @@ mod routes;
 use routes::mint;
 use routes::get_token;
 
+use crate::routes::burn;
+
 #[tokio::main]
 async fn main() {
 
@@ -20,6 +22,7 @@ async fn main() {
     .route("/", get(root))
     .route("/token/{name}", get(get_token))
     .route("/mint", post(mint))
+    .route("/burn", post(burn))
     .with_state(state);
 
     let listeners = tokio::net::TcpListener::bind("127.0.0.1:3000")

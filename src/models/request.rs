@@ -6,6 +6,11 @@ pub struct MintRequest {
     pub amount: u64,
 }
 
+#[derive(Deserialize)]
+pub struct BurnRequest {
+    pub name: String,
+    pub amount: u64,
+}
 
 #[derive(Serialize)]
 pub struct  ErrorResponse {

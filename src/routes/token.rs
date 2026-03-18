@@ -2,7 +2,7 @@ use std::sync::{Arc, Mutex};
 
 use axum::{Json, extract::{Path, State}, http::StatusCode};
 
-use crate::models::{AppState, ErrorResponse, MintRequest, Token};
+use crate::models::{AppState, ErrorResponse, MintRequest, Token, BurnRequest};
 
 pub async fn mint(
     State(state): State<Arc<Mutex<AppState>>>, 
@@ -50,4 +50,27 @@ pub async fn get_token(
             return Err((StatusCode::NOT_FOUND, Json(err_msg)));
         }
     }
+}
+
+pub async fn burn(
+    State(state): State<Arc<Mutex<AppState>>>, 
+    Json(payload): Json<BurnRequest>
+) -> Result<Json<Token>, (StatusCode, Json<ErrorResponse>)> {  
+    let token = {
+        let mut state = state.lock().unwrap();
+        match state.tokens.get_mut(&payload.name) {
+            Some(curr) => {
+                *curr -= payload.amount;
+                Token {
+                    name: payload.name,
+                    supply: *curr
+                }
+            },
+            None => {
+                let err_msg = ErrorResponse{error: String::from("Token not found")};
+                return Err((StatusCode::NOT_FOUND, Json(err_msg)));
+            }
+        }
+    };
+    Ok(Json(token))
 }
