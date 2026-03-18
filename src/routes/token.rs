@@ -1,6 +1,7 @@
-use std::sync::{Arc, RwLock};
+use std::sync::{Arc};
 
 use axum::{Json, extract::{Path, State}, http::StatusCode};
+use tokio::sync::RwLock;
 
 use crate::models::{AppState, ErrorResponse, MintRequest, Token, BurnRequest};
 
@@ -9,7 +10,7 @@ pub async fn mint(
     Json(payload): Json<MintRequest>
 ) -> Result<Json<Token>, (StatusCode, Json<ErrorResponse>)> {    
     let token = {
-        let mut state = state.write().unwrap();
+        let mut state = state.write().await;
 
         match state.tokens.get_mut(&payload.name) {
             Some(supply) => {
@@ -35,7 +36,7 @@ pub async fn get_token(
     State(state): State<Arc<RwLock<AppState>>>, 
     Path(name): Path<String>
 ) -> Result<Json<Token>, (StatusCode, Json<ErrorResponse>)> {
-    let state = state.read().unwrap();
+    let state = state.read().await;
 
     match state.tokens.get(&name) {
         Some(supply) => {
@@ -57,7 +58,7 @@ pub async fn burn(
     Json(payload): Json<BurnRequest>
 ) -> Result<Json<Token>, (StatusCode, Json<ErrorResponse>)> {  
     let token = {
-        let mut state = state.write().unwrap();
+        let mut state = state.write().await;
         match state.tokens.get_mut(&payload.name) {
             Some(curr) => {
                 if *curr < payload.amount {

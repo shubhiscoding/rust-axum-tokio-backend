@@ -1,4 +1,4 @@
-use std::{collections::HashMap, sync::{Arc, RwLock}};
+use std::{collections::HashMap, sync::{Arc}};
 use axum::{ Router, routing::{get, post}};
 
 mod models;
@@ -6,6 +6,7 @@ use models::AppState;
 mod routes;
 use routes::mint;
 use routes::get_token;
+use tokio::sync::RwLock;
 
 use crate::routes::burn;
 
