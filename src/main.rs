@@ -1,28 +1,11 @@
 use std::{collections::HashMap, sync::{Arc, Mutex}};
 use axum::{Json, Router, extract::{Path, State}, http::StatusCode, routing::{get, post}};
-use serde::Serialize;
-use serde::Deserialize;
 
-#[derive(Serialize)]
-struct Token {
-    name: String,
-    supply: u64,
-}
-
-#[derive(Deserialize)]
-struct MintRequest {
-    name: String,
-    amount: u64,
-}
-
-#[derive(Serialize)]
-struct  ErrorResponse {
-    error: String,
-}
-
-struct AppState {
-    tokens: HashMap<String, u64>,
-}
+mod models;
+use models::Token;
+use models::MintRequest;
+use models::ErrorResponse;
+use models::AppState;
 
 #[tokio::main]
 async fn main() {
